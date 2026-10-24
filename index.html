@@ -1,0 +1,243 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Task Tracker</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px 16px;
+      font-family: Arial, sans-serif;
+      background: #f1f5f9;
+      color: #172033;
+    }
+
+    .app {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 24px;
+      background: white;
+      border-radius: 18px;
+      box-shadow: 0 8px 30px #00000012;
+    }
+
+    h1 {
+      margin-bottom: 8px;
+      color: #2563eb;
+    }
+
+    .subtitle {
+      color: #64748b;
+      margin-bottom: 24px;
+    }
+
+    form {
+      display: grid;
+      gap: 10px;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 13px;
+      border-radius: 9px;
+      font-size: 16px;
+    }
+
+    input {
+      border: 1px solid #cbd5e1;
+    }
+
+    button {
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .add-btn {
+      background: #2563eb;
+      color: white;
+    }
+
+    .stats {
+      margin: 22px 0;
+      padding: 14px;
+      background: #eff6ff;
+      border-radius: 10px;
+    }
+
+    ul {
+      padding: 0;
+      list-style: none;
+    }
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    li span {
+      flex: 1;
+      overflow-wrap: anywhere;
+    }
+
+    li.completed span {
+      text-decoration: line-through;
+      color: #64748b;
+    }
+
+    .check-btn {
+      width: auto;
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .delete-btn {
+      width: auto;
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .empty {
+      color: #64748b;
+      text-align: center;
+      padding: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>My Task Tracker 📚</h1>
+    <p class="subtitle">Organize your studies, one task at a time.</p>
+
+    <form id="task-form">
+      <input id="task-input" type="text"
+        placeholder="What do you need to do?"
+        maxlength="150" required>
+
+      <input id="task-date" type="date">
+
+      <button class="add-btn" type="submit">
+        + Add Task
+      </button>
+    </form>
+
+    <div class="stats" id="stats">
+      0 tasks · 0 completed
+    </div>
+
+    <ul id="task-list"></ul>
+  </main>
+
+  <script>
+    const form = document.getElementById("task-form");
+    const input = document.getElementById("task-input");
+    const dateInput = document.getElementById("task-date");
+    const list = document.getElementById("task-list");
+    const stats = document.getElementById("stats");
+
+    let tasks = [];
+
+    try {
+      tasks = JSON.parse(
+        localStorage.getItem("studentTasks") || "[]"
+      );
+
+      if (!Array.isArray(tasks)) tasks = [];
+    } catch {
+      tasks = [];
+    }
+
+    function saveTasks() {
+      try {
+        localStorage.setItem(
+          "studentTasks",
+          JSON.stringify(tasks)
+        );
+      } catch {
+        alert("Storage is unavailable in this browser.");
+      }
+    }
+
+    function renderTasks() {
+      list.replaceChildren();
+
+      const completed = tasks.filter(task => task.done).length;
+      stats.textContent =
+        `${tasks.length} tasks · ${completed} completed`;
+
+      if (tasks.length === 0) {
+        const message = document.createElement("li");
+        message.className = "empty";
+        message.textContent = "No tasks yet. Add your first task!";
+        list.appendChild(message);
+        return;
+      }
+
+      tasks.forEach(task => {
+        const item = document.createElement("li");
+        if (task.done) item.classList.add("completed");
+
+        const check = document.createElement("button");
+        check.className = "check-btn";
+        check.textContent = task.done ? "Undo" : "Done";
+        check.setAttribute("aria-label",
+          task.done ? "Mark task incomplete" : "Complete task");
+
+        check.addEventListener("click", () => {
+          task.done = !task.done;
+          saveTasks();
+          renderTasks();
+        });
+
+        const details = document.createElement("span");
+        details.textContent = task.text +
+          (task.date ? " · Due " + task.date : "");
+
+        const remove = document.createElement("button");
+        remove.className = "delete-btn";
+        remove.textContent = "Delete";
+        remove.setAttribute("aria-label", "Delete task");
+
+        remove.addEventListener("click", () => {
+          tasks = tasks.filter(entry => entry.id !== task.id);
+          saveTasks();
+          renderTasks();
+        });
+
+        item.append(check, details, remove);
+        list.appendChild(item);
+      });
+    }
+
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+
+      const text = input.value.trim();
+      if (!text) return;
+
+      tasks.push({
+        id: Date.now() + Math.random(),
+        text,
+        date: dateInput.value,
+        done: false
+      });
+
+      saveTasks();
+      form.reset();
+      renderTasks();
+      input.focus();
+    });
+
+    renderTasks();
+  </script>
+</body>
+</html>
